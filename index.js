@@ -1,3 +1,7 @@
-const GenerateMultipleCommands = require("./commands");
+// import and store exports as global functions
+const Commands = require("./commands");
 
-console.log(GenerateMultipleCommands(["say hi", "say hi2"]));
+// main function
+(() => {
+    console.log(Commands.GenerateMultipleCommands(["say hi", "say hi2"]));
+})();
