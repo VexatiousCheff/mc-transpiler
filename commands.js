@@ -40,8 +40,14 @@ module.exports = {
         return json;
     },
 
-    CombineCommands: function(cmds) {
+    CombineCommands: function(cmds, doClearCommands = true) {
         // first-in first-out, we must go back->front when generating
+
+        if (doClearCommands) {
+            let limit = cmds.length + 1; // include the starting commandblock
+
+            cmds.push(`fill ~ ~ ~ ~ ~${-limit} ~ air`);
+        }
 
         let j = this.MakeFallingBlockCommand(cmds[cmds.length - 1]);
 
@@ -56,6 +62,21 @@ module.exports = {
     GenerateMultipleCommands: function(cmds) {
         let strNbt = this.JSONtoNBT(this.CombineCommands(cmds));
 
-        return "summon falling_block ~ ~2 ~ " + strNbt;
+        let cmd = `summon falling_block ~ ~2 ~ ${strNbt}`;
+
+        if (cmd.length > 32500) {
+            console.warn("command length > max (32500), will not paste in correctly!");
+
+            let tempCmd = this.JSONtoNBT(this.CombineCommands(cmds));
+
+            if (tempCmd.length < 32500) {
+                // without the clear command, it will be under the limit
+                cmd = tempCmd;
+
+                console.warn("command blocks will not be cleared!");
+            }
+        }
+
+        return cmd;
     }
 };

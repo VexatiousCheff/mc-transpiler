@@ -1,7 +1,12 @@
-// import and store exports as global functions
 const Commands = require("./commands");
 
 // main function
 (() => {
-    console.log(Commands.GenerateMultipleCommands(["say hi", "say hi2"]));
+    let arr = [];
+
+    for(let i = 0; i < 25; i++) {
+        arr.push(`say hi${i}`);
+    }
+
+    console.log(Commands.GenerateMultipleCommands(arr));
 })();
