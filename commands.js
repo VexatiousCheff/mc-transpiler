@@ -1,5 +1,9 @@
 module.exports = {
-    isChained: false,
+    GenerationModes: {
+        Default: 0,
+        Minecart: 1,
+        Chained: 2
+    },
 
     JSONtoNBT: function (json) {
         // https://stackoverflow.com/questions/11233498/json-stringify-without-quotes-on-properties
@@ -10,8 +14,7 @@ module.exports = {
             .replace(/"(\\"|[\w0-9]*)*?"/gim, '$1'); // saves ~800 chars on 100 command list
     },
 
-    // works
-    MakeFallingBlockCommand: function (cmd, passenger = null) {
+    MakeFallingBlockCommandJSON: function (cmd, passenger = null) {
         let json = {
             id: "falling_block",
             Time: 1,
@@ -28,7 +31,7 @@ module.exports = {
             json.Passengers = [passenger];
         }
 
-        if (this.isChained && !cmd.ignoreChain) {
+        if (this.GenerationMode == this.GenerationModes.Default && !cmd.ignoreChain) {
             json.BlockState = {
                 Name: "chain_command_block",
                 Properties: {
@@ -40,35 +43,49 @@ module.exports = {
         return json;
     },
 
-    // works
-    MakeArmorStandWithPassenger: function (passengerJson) {
+    MakeFallingBlockJSON(tile, passengers = null) {
+        let json = {
+            id: "falling_block",
+            BlockState: {
+                Name: tile
+            }
+        };
+
+        if (passengers != null) {
+            json.Passengers = passengers;
+        }
+
+        return json;
+    },
+
+    MakeArmorStandPassengersJSON: function (passengers) {
         let json = {
             id: "armor_stand",
             Health: 0,
-            Passengers: [passengerJson]
+            Passengers: passengers
+        };
+
+        return json;
+    },
+
+    MakeMinecartJSON: function (cmd) {
+        let json = {
+            id: "command_block_minecart",
+            Command: cmd
         };
 
         return json;
     },
 
     CombineCommands: function (cmds, doClearCommand = true) {
-        // first-in first-out, we must go back->front when generating
-
-        if (doClearCommand) {
+        if (doClearCommand && this.GenerationMode != this.GenerationModes.Minecart) {
             let limit = cmds.length + 1; // including start block
 
             // the 2 chained commands we add
-            cmds.push(`fill ~ ~${this.isChained ? 2 : ""} ~ ~ ~${-limit} ~ air`);
-        }
-        else {
-            if (cmds.length == 1) {
-                // only one command, no need to do anything
-
-                return j;
-            }
+            cmds.push(`fill ~ ~${this.GenerationMode == this.GenerationModes.Chained ? 2 : ""} ~ ~ ~${-limit} ~ air`);
         }
 
-        if (this.isChained) {
+        if (this.GenerationMode == this.GenerationMode.Chained) {
             // remove starting command block, then set another one (correct direction + starts chain)
             cmds.push({
                 command: `setblock ~ ~${-cmds.length - 1} ~ air replace`,
@@ -80,14 +97,36 @@ module.exports = {
             });
         }
 
-        let j = this.MakeFallingBlockCommand(cmds[cmds.length - 1]);
+        if (this.GenerationMode == this.GenerationModes.Minecart) {
 
-        for (let i = cmds.length - 2; i >= 0; i--) {
-            j = this.MakeArmorStandWithPassenger(j);
-            j = this.MakeFallingBlockCommand(cmds[i], j);
+            let passengers = [];
+
+            passengers.push(this.MakeFallingBlockJSON("activator_rail"));
+
+            for (let i = 0; i < cmds.length; i++) {
+                passengers.push(this.MakeMinecartJSON(cmds[i]));
+            }
+
+            if (doClearCommand) {
+                passengers.push(this.MakeMinecartJSON("kill @e[type=command_block_minecart,distance=..1]"));
+            }
+            
+            let j = this.MakeFallingBlockJSON("redstone_block", [this.MakeArmorStandPassengersJSON(passengers)]);
+
+            return j;
         }
+        else {
+            // first-in first-out, we must go back->front when generating
 
-        return j;
+            let j = this.MakeFallingBlockCommandJSON(cmds[cmds.length - 1]);
+
+            for (let i = cmds.length - 2; i >= 0; i--) {
+                j = this.MakeArmorStandPassengersJSON([j]);
+                j = this.MakeFallingBlockCommandJSON(cmds[i], j);
+            }
+
+            return j;
+        }
     },
 
     GenerateMultipleCommands: function (cmds, tryClearCommand = true) {
@@ -112,3 +151,5 @@ module.exports = {
         return cmd;
     }
 };
+
+module.exports.GenerationMode = module.exports.GenerationModes.Default;
