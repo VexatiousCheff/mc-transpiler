@@ -1,15 +1,15 @@
 module.exports = {
-    JSONtoNBT: function(json) {
+    JSONtoNBT: function (json) {
         // https://stackoverflow.com/questions/11233498/json-stringify-without-quotes-on-properties
         // thank you stackoverflow friend
 
-        const str = JSON.stringify(json);
-
-        return str.replace(/"([^"]+)":/g, '$1:');
+        return JSON.stringify(json)
+            .replace(/"([^"]+)":/g, '$1:')
+            .replace(/"([^\s]*)"/gim, '$1');
     },
 
     // works
-    MakeFallingBlockCommand: function(cmd, passenger = null) {
+    MakeFallingBlockCommand: function (cmd, passenger = null) {
         let json = {
             id: "falling_block",
             Time: 1,
@@ -30,7 +30,7 @@ module.exports = {
     },
 
     // works
-    MakeArmorStandWithPassenger: function(passengerJson) {
+    MakeArmorStandWithPassenger: function (passengerJson) {
         let json = {
             id: "armor_stand",
             Health: 0,
@@ -40,13 +40,20 @@ module.exports = {
         return json;
     },
 
-    CombineCommands: function(cmds, doClearCommands = true) {
+    CombineCommands: function (cmds, doClearCommand = true) {
         // first-in first-out, we must go back->front when generating
 
-        if (doClearCommands) {
+        if (doClearCommand) {
             let limit = cmds.length + 1; // include the starting commandblock
 
             cmds.push(`fill ~ ~ ~ ~ ~${-limit} ~ air`);
+        }
+        else {
+            if (cmds.length == 1) {
+                // only one command, no need to do anything
+
+                return j;
+            }
         }
 
         let j = this.MakeFallingBlockCommand(cmds[cmds.length - 1]);
@@ -59,21 +66,24 @@ module.exports = {
         return j;
     },
 
-    GenerateMultipleCommands: function(cmds) {
-        let strNbt = this.JSONtoNBT(this.CombineCommands(cmds));
+    GenerateMultipleCommands: function (cmds, tryClearCommand = true) {
+        let strNbt = this.JSONtoNBT(this.CombineCommands(cmds, tryClearCommand));
 
         let cmd = `summon falling_block ~ ~2 ~ ${strNbt}`;
 
         if (cmd.length > 32500) {
             console.warn("command length > max (32500), will not paste in correctly!");
 
-            let tempCmd = this.JSONtoNBT(this.CombineCommands(cmds));
+            if (tryClearCommand) {
+                // see if it will be under the limit without the clear command
 
-            if (tempCmd.length < 32500) {
-                // without the clear command, it will be under the limit
-                cmd = tempCmd;
+                let tempCmd = this.JSONtoNBT(this.CombineCommands(cmds, false));
 
-                console.warn("command blocks will not be cleared!");
+                if (tempCmd.length <= 32500) {
+                    cmd = tempCmd;
+
+                    console.warn("command blocks will not be cleared!");
+                }
             }
         }
 
