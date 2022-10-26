@@ -1,11 +1,13 @@
 module.exports = {
+    isChained: false,
+
     JSONtoNBT: function (json) {
         // https://stackoverflow.com/questions/11233498/json-stringify-without-quotes-on-properties
         // thank you stackoverflow friend
 
         return JSON.stringify(json)
             .replace(/"([^"]+)":/g, '$1:')
-            .replace(/"([^\s]*)"/gim, '$1');
+            .replace(/"(\\"|[\w0-9]*)*?"/gim, '$1'); // saves ~800 chars on 100 command list
     },
 
     // works
@@ -18,12 +20,21 @@ module.exports = {
             },
             TileEntityData: {
                 auto: 1,
-                Command: cmd
+                Command: cmd.command ?? cmd
             }
         };
 
         if (passenger != null) {
             json.Passengers = [passenger];
+        }
+
+        if (this.isChained && !cmd.ignoreChain) {
+            json.BlockState = {
+                Name: "chain_command_block",
+                Properties: {
+                    facing: "up"
+                }
+            };
         }
 
         return json;
@@ -44,9 +55,10 @@ module.exports = {
         // first-in first-out, we must go back->front when generating
 
         if (doClearCommand) {
-            let limit = cmds.length + 1; // include the starting commandblock
+            let limit = cmds.length + 1; // including start block
 
-            cmds.push(`fill ~ ~ ~ ~ ~${-limit} ~ air`);
+            // the 2 chained commands we add
+            cmds.push(`fill ~ ~${this.isChained ? 2 : ""} ~ ~ ~${-limit} ~ air`);
         }
         else {
             if (cmds.length == 1) {
@@ -54,6 +66,18 @@ module.exports = {
 
                 return j;
             }
+        }
+
+        if (this.isChained) {
+            // remove starting command block, then set another one (correct direction + starts chain)
+            cmds.push({
+                command: `setblock ~ ~${-cmds.length - 1} ~ air replace`,
+                ignoreChain: true
+            });
+            cmds.push({
+                command: `summon falling_block ~ ~${-cmds.length} ~ {BlockState:{Name:command_block,Properties:{facing:up}}, TileEntityData:{auto:1}}`,
+                ignoreChain: true
+            });
         }
 
         let j = this.MakeFallingBlockCommand(cmds[cmds.length - 1]);
@@ -74,17 +98,15 @@ module.exports = {
         if (cmd.length > 32500) {
             console.warn("command length > max (32500), will not paste in correctly!");
 
-            if (tryClearCommand) {
-                // see if it will be under the limit without the clear command
+            // see if it will be under the limit without some stuff...
+            let tempCmd = this.JSONtoNBT(this.CombineCommands(cmds, false));
 
-                let tempCmd = this.JSONtoNBT(this.CombineCommands(cmds, false));
+            if (tempCmd.length <= 32500) {
+                cmd = tempCmd;
 
-                if (tempCmd.length <= 32500) {
-                    cmd = tempCmd;
-
-                    console.warn("command blocks will not be cleared!");
-                }
+                console.warn("command blocks will not be cleared!");
             }
+
         }
 
         return cmd;

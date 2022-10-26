@@ -1,6 +1,9 @@
 const Commands = require("./commands");
 const fs = require("fs");
 
+// big overhead, however executes instantly
+Commands.isChained = true;
+
 // main function
 (() => {
     let arr = [];
