@@ -1,7 +1,9 @@
 const Commands = require("./commands");
+const Transpiler = require("./transpiler");
+
 const fs = require("fs");
 
-// big overhead, however executes instantly
+// big overhead, however executes instantly (after command blocks build)
 Commands.isChained = true;
 
 // main function
