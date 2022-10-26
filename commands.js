@@ -75,7 +75,7 @@ module.exports = {
                 ignoreChain: true
             });
             cmds.push({
-                command: `summon falling_block ~ ~${-cmds.length} ~ {BlockState:{Name:command_block,Properties:{facing:up}}, TileEntityData:{auto:1}}`,
+                command: `summon falling_block ~ ~${-cmds.length} ~ {BlockState:{Name:command_block,Properties:{facing:up}},TileEntityData:{auto:1}}`,
                 ignoreChain: true
             });
         }
