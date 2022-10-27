@@ -11,7 +11,7 @@ module.exports = {
 
         return JSON.stringify(json)
             .replace(/"([^"]+)":/g, '$1:')
-            .replace(/(?<!(?<!\\)\\)"(\\"|[\w0-9]*)*?"/gim, '$1'); // saves ~800 chars / 100 commands
+            .replace(/(?<!(?<!\\)\\)"(\\"|[\w0-9]*)*?"/gim, '$1'); // saves ~800 chars per 100 commands
     },
 
     MakeFallingBlockCommandJSON: function (cmd, passenger = null) {
