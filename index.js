@@ -8,14 +8,9 @@ Commands.GenerationMode = Commands.GenerationModes.Minecart;
 
 // main function
 (() => {
-    let arr = [];
+    const input = fs.readFileSync("./input.txt", "utf-8");
 
-    for (let i = 0; i < 200; i++) {
-        arr.push(`say hi${i}`);
-    }
+    const output = Transpiler.Transpile(input);
 
-    let cmd = Commands.GenerateMultipleCommands(arr);
-
-    console.log(`charcount: ${cmd.length} (${Math.floor(cmd.length/32500*100)}%)`);
-    fs.writeFileSync("command.txt", cmd);
+    fs.writeFileSync("./command.txt", output);
 })();

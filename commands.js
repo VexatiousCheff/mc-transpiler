@@ -109,6 +109,7 @@ module.exports = {
 
             if (doClearCommand) {
                 passengers.push(this.MakeMinecartJSON("kill @e[type=command_block_minecart,distance=..1]"));
+                // this leaves behind the redstone + activator rail block
             }
             
             let j = this.MakeFallingBlockJSON("redstone_block", [this.MakeArmorStandPassengersJSON(passengers)]);

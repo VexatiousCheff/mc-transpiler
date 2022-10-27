@@ -1,0 +1,1 @@
+command title @a title "fuck you"
