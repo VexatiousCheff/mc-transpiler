@@ -3,8 +3,6 @@ const Commands = require("./commands");
 module.exports = {
     Functions: {
         command: function (args) {
-            let str = args.join(' ');
-
             return args.join(' ')
                 .trim()
         },
